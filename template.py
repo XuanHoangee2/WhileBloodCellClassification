@@ -13,6 +13,7 @@ list_of_file = [
     f"{project_name}/models/spatial_cooccurrence.py",
     f"{project_name}/models/classifier.py",
     f"{project_name}/models/losses.py",
+    f"{project_name}/models/blocks.py",
     "requirements.txt",
     "train.py",
     "utils",

@@ -28,8 +28,8 @@ class PixelEncoder(torch.nn.Module):
         return [c1, c2, c3, c4]
     
 
-encoder = PixelEncoder()
-x = torch.randn(1, 3, 256, 256)
-feature = encoder(x)
-for f in feature:
-    print(f.shape)
+# encoder = PixelEncoder()
+# x = torch.randn(1, 3, 256, 256)
+# feature = encoder(x)
+# for f in feature:
+#     print(f.shape)
