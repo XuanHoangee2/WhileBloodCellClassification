@@ -1,24 +1,20 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .blocks import MLPLayer, CoLLayer
 
-class CoOccurrenceModule(nn.Module):
-    def __init__(self, kernel_size = 5):
+class SCFEModule(nn.Module):
+    def __init__(self, in_channels, hidden_dim, out_channels):
         super().__init__()
+        self.mlp = MLPLayer(in_channels, hidden_dim, out_channels)
+        self.co_occurrence = CoLLayer()
+        self.linear = nn.Linear(out_channels, out_channels)
 
-        self.kernel_size = kernel_size
-        self.padding = kernel_size // 2
-
-        self.spatial_weight = nn.Parameter(torch.randn(kernel_size*kernel_size))
-    
     def forward(self, x):
-        B,C,H,W = x.shape
-        patches = F.unfold(x,kernel_size=self.kernel_size, padding=self.padding)
-        patches = patches.view(B,C,self.kernel_size*self.kernel_size,H,W)
-        center = x.unsqueeze(2)
-        similarity = F.cosine_similarity(center,patches,dim=1)
-        likelihood = (similarity + 1.0) / 2.0
-        w = self.spatial_weight.view(1,-1,1,1)
-        weight = likelihood * w
-        out = (patches*weight.unsqueeze(1)).sum(dim=2)
-        return out
+        x = self.mlp(x)
+        y = self.co_occurrence(x)
+        y = y + x
+        y = y.mean(dim=[2,3])
+        query = self.linear(y)
+        return query
+        
