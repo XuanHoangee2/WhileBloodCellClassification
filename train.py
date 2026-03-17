@@ -30,7 +30,7 @@ pixel_features = decoder(features)
 qi = SCFE(features[-1])
 Qi= TransformerDecoder(pixel_features, qi)
 class_logit, masks = segmen(Qi, pixel_features)
-print(masks.shape)
+# print(class_logit[0,20])
 
 # num_queries = 100 
 # qi_input = qi.unsqueeze(0).expand(num_queries, -1, -1)
@@ -50,13 +50,10 @@ print(masks.shape)
 
 plt.figure(figsize=(10, 10))
 
-# Chọn 16 queries đầu tiên để in
+
 for i in range(16):
     plt.subplot(4, 4, i + 1)
     
-    # 1. Lấy mask thứ i
-    # 2. Dùng .sigmoid() để đưa về khoảng 0-1 cho dễ nhìn
-    # 3. Chuyển sang numpy để vẽ
     mask_to_plot = masks[0, i].sigmoid().detach().cpu().numpy()
     
     plt.imshow(mask_to_plot, cmap='gray')
