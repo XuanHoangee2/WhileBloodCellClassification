@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class TransformerDecoderLayer(nn.Module):
-    def __init__(self, d_model = 256, nhead = 8, dim_feedforward = 512):
+    def __init__(self, d_model = 256, nhead = 8, dim_feedforward = 512, dropout= 0.1):
         super().__init__()
 
         self.self_attn = nn.MultiheadAttention(d_model, nhead, batch_first=True)
@@ -10,7 +10,9 @@ class TransformerDecoderLayer(nn.Module):
         self.ffn = nn.Sequential(
             nn.Linear(d_model,dim_feedforward),
             nn.ReLU(inplace=True),
-            nn.Linear(dim_feedforward, d_model)
+            nn.Dropout(dropout),
+            nn.Linear(dim_feedforward, d_model),
+            nn.Dropout(dropout)
         )
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
