@@ -6,7 +6,8 @@ logging.basicConfig(level=logging.INFO, format = '[%(asctime)s]: %(message)s:')
 project_name = "WhiteBloodCellClassification"
 
 list_of_file = [
-    "data/.gitkeep",
+    "data/RawData/.gitkeep",
+    "data/SourceData/.gitkeep",
     f"{project_name}/models/PixelEncoder.py",
     f"{project_name}/models/PixelDecoder.py",
     f"{project_name}/models/TransformerDecoder.py",
@@ -15,9 +16,13 @@ list_of_file = [
     f"{project_name}/models/classifier.py",
     f"{project_name}/models/losses.py",
     f"{project_name}/models/blocks.py",
+    f"{project_name}/models/__init__.py",
+    f"{project_name}/DomainAdaptation/__init__.py",
+    f"{project_name}/DomainAdaptation/DA_module.py",
+    "research/__init__.py",
+    "research/trials.ipynb",
     "requirements.txt",
     "train.py",
-    "utils",
     "configs/configs.yaml",
     "experiments/checkpoints",
 ]

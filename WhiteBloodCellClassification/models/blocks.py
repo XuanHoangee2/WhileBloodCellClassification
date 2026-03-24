@@ -18,8 +18,11 @@ class MLPLayer(nn.Module):
         super().__init__()
         self.mlp = nn.Sequential(
             nn.Conv2d(in_channels, hidden_dim, kernel_size=1),
+            nn.BatchNorm2d(hidden_dim),
             nn.ReLU(inplace=True),
-            nn.Conv2d(hidden_dim, out_channels, kernel_size=1)
+            nn.Conv2d(hidden_dim, out_channels, kernel_size=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
         )
     def forward(self, x):
         return self.mlp(x)
