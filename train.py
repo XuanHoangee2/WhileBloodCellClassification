@@ -13,11 +13,11 @@ from WhiteBloodCellClassification.models.blocks import MLPLayer
 encoder = PixelEncoder()
 decoder = PixelDecoder()
 SCFE = SCFEModule(2048, 512, 256)
-segmen = SegmentationHead(256, 256)
+segmen = SegmentationHead(256, 256,2048)
 
 TransformerDecoder = TransformerDecoder()
 
-img_path = "data/Dataset 1/001.bmp"
+img_path = r"D:\work\WBC_Segmentation\WhileBloodCellClassification\data/RawData\Dataset 1/013.bmp"
 image = Image.open(img_path).convert("RGB")
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
@@ -29,36 +29,18 @@ features = encoder(img_resized)
 pixel_features = decoder(features)
 qi = SCFE(features[-1])
 Qi= TransformerDecoder(pixel_features, qi)
-class_logit, masks = segmen(Qi, pixel_features)
-# print(class_logit[0,20])
+class_logit, masks = segmen(Qi, pixel_features, features[-1])
+print(class_logit.shape)
+# import matplotlib.pyplot as plt
 
-# num_queries = 100 
-# qi_input = qi.unsqueeze(0).expand(num_queries, -1, -1)
+# img = masks[0].detach().cpu()  # shape: (3, 256, 256)
+# img = img.permute(1, 2, 0)     # -> (256, 256, 3)
 
-# pixel_features = decoder(features)
-# print(features[1].shape)
-# print(ouput.shape)
 # plt.figure(figsize=(10,10))
-
-# for i in range(16):
-#     plt.subplot(4,4,i+1)
-#     # plt.imshow(ouput[0,i].detach().cpu().numpy(), cmap='gray')
-#     plt.imshow(output[0,i].view(16,16).detach().cpu().numpy(), cmap='gray')
-#     plt.axis("off")
-
+# plt.imshow(img.numpy())
+# plt.axis('off')
 # plt.show()
 
-plt.figure(figsize=(10, 10))
 
 
-for i in range(16):
-    plt.subplot(4, 4, i + 1)
-    
-    mask_to_plot = masks[0, i].sigmoid().detach().cpu().numpy()
-    
-    plt.imshow(mask_to_plot, cmap='gray')
-    plt.title(f"Query {i}", fontsize=8)
-    plt.axis("off")
 
-plt.tight_layout()
-plt.show()
