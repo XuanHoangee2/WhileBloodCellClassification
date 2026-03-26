@@ -4,3 +4,4 @@ numpy==1.26.4
 matplotlib
 opencv-python
 tqdm
+pyyaml

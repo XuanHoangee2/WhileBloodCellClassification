@@ -1,0 +1,20 @@
+Domain_Adaptation_training:
+  LEARNING_RATE: 0.0002
+  BATCH_SIZE: 8
+  DEVICE: cuda
+  NUM_EPOCHS: 30
+  IMAGE_HEIGHT: 256
+  IMAGE_WIDTH: 256
+  PIN_MEMORY: true
+  NUM_WORKERS: 2
+  LOAD_MODEL: false
+  WEIGHT_DECAY: 5e-5
+  SEED: 146
+dataset:
+  root_dir: D:/work/WBC_Segmentation/WhileBloodCellClassification/data/RawData
+  mask_dir: Dataset 1
+  binary_dir: Result 1
+weight:
+  weight_cross_entropy: 2
+  weight_mask: 5
+  weight_rec: 1
