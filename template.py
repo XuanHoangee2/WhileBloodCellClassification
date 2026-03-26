@@ -19,11 +19,17 @@ list_of_file = [
     f"{project_name}/models/__init__.py",
     f"{project_name}/DomainAdaptation/__init__.py",
     f"{project_name}/DomainAdaptation/DA_module.py",
+    f"{project_name}/utils.py",
+    f"{project_name}/logger.py",
+    f"{project_name}/__init__.py",
+    f"{project_name}/dataset.py",
+    f"{project_name}/DA_training.py",
+    f"{project_name}/config/config.yaml",
+    f"{project_name}/config/config_loader.py",
     "research/__init__.py",
     "research/trials.ipynb",
     "requirements.txt",
     "train.py",
-    "configs/configs.yaml",
     "experiments/checkpoints",
 ]
 
