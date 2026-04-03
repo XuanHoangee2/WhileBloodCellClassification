@@ -4,10 +4,11 @@ from torch.utils.data import Dataset, DataLoader
 from config.config_loader import load_config
 import torch
 from DomainAdaptation.DA_module import DomainAdaptationModule
-from models.losses import DiceLoss, BCELoss, ReconstructionLoss, CLSLoss
+from models.losses import *
 from utils import *
 from logger import ExperimentLogger
 import numpy as np
+import torch.nn as nn
 
 
 def training_fn(loader, model, optimizer, CrossEntropyLoss,DICELoss,BCELoss, ReconstructionLoss, scaler):
@@ -21,11 +22,9 @@ def training_fn(loader, model, optimizer, CrossEntropyLoss,DICELoss,BCELoss, Rec
     for batch in loop:
         images = batch["image"]
         masks = batch["mask"]
-        # binarys = batch["binary"]
         images = images.to(device=DEVICE)
         masks = masks.float().to(device=DEVICE)
         masks_long = masks.long().to(device=DEVICE)
-        # binarys = binarys.float().to(device=DEVICE)
 
         # forward
         with torch.cuda.amp.autocast():
@@ -36,13 +35,20 @@ def training_fn(loader, model, optimizer, CrossEntropyLoss,DICELoss,BCELoss, Rec
             for k in range(K):
                 pred_binary  = predictions[:, k:k+1, :, :]
                 target_binary = (masks == k).float()
-                dice = DICELoss(pred_binary, target_binary.long())
+                dice = DICELoss(pred_binary, target_binary.long().unsqueeze(1))
                 bce = BCELoss(pred_binary, target_binary.unsqueeze(1))
                 mask_loss += bce + dice
+            mask_loss = mask_loss / K
+            #####
+            # boundary_loss = BoundaryLoss(predictions, masks_long)
+
+
+            ######
             Reconstruction = ReconstructionLoss(encoded_features, query_features)
-            loss = weight_cross_entropy * CrossEntropy + weight_mask * mask_loss + weight_rec * Reconstruction
+            loss = weight_cross_entropy * CrossEntropy + weight_mask * mask_loss + weight_rec * Reconstruction 
 
         # backward
+
         optimizer.zero_grad()
         scaler.scale(loss).backward()
         scaler.step(optimizer)
@@ -68,9 +74,9 @@ def training_fn(loader, model, optimizer, CrossEntropyLoss,DICELoss,BCELoss, Rec
     )
 
 config = load_config()
+SEED = config["Domain_Adaptation_training"]["SEED"]
 logger = ExperimentLogger()
 logger.log_config(config)
-SEED = config["Domain_Adaptation_training"]["SEED"]
 EPOCHS = config["Domain_Adaptation_training"]["NUM_EPOCHS"]
 root_dir = config["dataset"]["root_dir"]
 mask_dir = config["dataset"]["mask_dir"]
@@ -79,9 +85,13 @@ DEVICE = torch.device(config["Domain_Adaptation_training"]["DEVICE"] if torch.cu
 weight_cross_entropy = config["weight"]["weight_cross_entropy"]
 weight_mask = config["weight"]["weight_mask"]
 weight_rec = config["weight"]["weight_rec"]
+weight_boundary = config["weight"]["weight_boundary"]
 batch_size = config["Domain_Adaptation_training"]["BATCH_SIZE"]
 num_workers = config["Domain_Adaptation_training"].get("NUM_WORKERS", 0)
 pin_memory = config["Domain_Adaptation_training"].get("PIN_MEMORY", False)
+background_weight = config["class_weights"]["background"]
+cytoplasm_weight = config["class_weights"]["cytoplasm"]
+nucleus_weight = config["class_weights"]["nucleus"]
 
 np.random.seed(SEED)
 
@@ -110,19 +120,21 @@ val_loader = DataLoader(
     num_workers=num_workers,
     pin_memory=pin_memory
 )
-
+# path_model_trained = "D:\work\WBC_Segmentation\WhileBloodCellClassification\logs\exp_20260402_004902\model_epoch_15.pth"
 model = DomainAdaptationModule().to(DEVICE)
-CrossEntropyLoss = CLSLoss()
+# model.load_state_dict(torch.load(path_model_trained, map_location="cpu"))
+# model.eval()
+CrossEntropyLoss = CLSLoss(class_weights=[background_weight, cytoplasm_weight, nucleus_weight])
 diceLoss = DiceLoss()
-bceLoss = BCELoss()
+bceLoss = nn.BCEWithLogitsLoss()
 reconstructionLoss = ReconstructionLoss()
-optimizer = get_optimizer(model)
+optimizer = get_optimizer(model,reconstructionLoss)
 scaler = get_scaler()
-for epoch in range(EPOCHS):
+for epoch in range(EPOCHS+1):
     print(f"\nEpoch [{epoch+1}/{EPOCHS}]")
     loss, ce, mask, rec = training_fn(loader=train_loader, model=model, optimizer=optimizer, CrossEntropyLoss=CrossEntropyLoss, DICELoss=diceLoss, BCELoss=bceLoss, ReconstructionLoss=reconstructionLoss, scaler=scaler)
-    print(f"Epoch {epoch}: Loss={loss:.4f}, CE={ce:.4f}, Mask={mask:.4f}, Rec={rec:.4f}")
+    print(f"Epoch {epoch+1}: Loss={loss:.4f}, CE={ce:.4f}, Mask={mask:.4f}, Rec={rec:.4f}")
 
     logger.log_epoch(epoch, loss, ce, mask, rec)
-    if epoch % 5 == 0:
+    if (epoch) % 5 == 0:
         logger.save_checkpoint(model, epoch)

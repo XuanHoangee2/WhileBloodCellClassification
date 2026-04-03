@@ -1,5 +1,6 @@
 import torchvision.models as models
 import torch
+import torch.nn as nn
 
 class PixelEncoder(torch.nn.Module):
     def __init__(self, pretrained=True):
@@ -15,6 +16,11 @@ class PixelEncoder(torch.nn.Module):
         self.layer2 = resnet.layer2
         self.layer3 = resnet.layer3
         self.layer4 = resnet.layer4
+
+        for m in self.modules():
+            if isinstance(m, nn.BatchNorm2d):
+                m.eval()
+                m.requires_grad_(False)
     
     def forward(self, x):
         x = self.conv1(x)
@@ -28,8 +34,3 @@ class PixelEncoder(torch.nn.Module):
         return [c1, c2, c3, c4]
     
 
-# encoder = PixelEncoder()
-# x = torch.randn(1, 3, 256, 256)
-# feature = encoder(x)
-# for f in feature:
-#     print(f.shape)

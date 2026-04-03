@@ -30,10 +30,10 @@ def check_accuracy(loader,model,device="cuda"):
     print(f"Dice score: {dice_score/len(loader)}")
     model.train()
     
-def get_optimizer(model, learning_rate=learning_rate, weight_decay=weight_decays):
+def get_optimizer(model, reconstruction, learning_rate=learning_rate, weight_decay=weight_decays):
 
     optimizer = torch.optim.AdamW(
-        model.parameters(),
+        list(model.parameters()) + list(reconstruction.parameters()),
         lr=learning_rate,
         weight_decay=float(weight_decay),
         betas=(0.9, 0.999)

@@ -13,7 +13,7 @@ from WhiteBloodCellClassification.models.blocks import MLPLayer
 encoder = PixelEncoder()
 decoder = PixelDecoder()
 SCFE = SCFEModule(2048, 512, 256)
-segmen = SegmentationHead(256, 256,2048)
+segmen = SegmentationHead()
 
 TransformerDecoder = TransformerDecoder()
 
@@ -26,11 +26,27 @@ transform = transforms.Compose([
 img_resized = transform(image).unsqueeze(0)  
 
 features = encoder(img_resized)
-pixel_features = decoder(features)
+pixel_features = decoder(features)[0]
 qi = SCFE(features[-1])
 Qi= TransformerDecoder(pixel_features, qi)
-class_logit, masks = segmen(Qi, pixel_features, features[-1])
-print(class_logit.shape)
+masks = segmen(Qi, pixel_features)
+
+pred = masks.squeeze(0)
+mask = pred.argmax(dim=0)
+
+import numpy as np
+
+mask_np = mask.cpu().numpy()
+
+# scale về 0–255
+mask_vis = (mask_np * (255 // 2)).astype(np.uint8)
+
+plt.imshow(mask_vis, cmap='gray')
+plt.show()
+
+
+
+
 # import matplotlib.pyplot as plt
 
 # img = masks[0].detach().cpu()  # shape: (3, 256, 256)
