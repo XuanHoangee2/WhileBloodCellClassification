@@ -44,8 +44,8 @@ class SegmentationHead(nn.Module):
         candidate_masks = candidate_masks / (Cp ** 0.5)
         class_logits = self.class_mlp(queries)  # B x Nq x K
 
-        temperature = temperature  
-        class_probs = torch.softmax(class_logits / temperature, dim=-1)
+        temp = temperature  # Use module-level temperature from config
+        class_probs = torch.softmax(class_logits / temp, dim=-1)
 
         final_masks = torch.einsum(
             "bnk,bnhw->bkhw",

@@ -1,6 +1,7 @@
 import os
 import yaml
 import csv
+import json
 from datetime import datetime
 import torch
 
@@ -15,21 +16,48 @@ class ExperimentLogger:
             writer = csv.writer(f)
             writer.writerow([
                 "epoch",
-                "loss",
-                "ce_loss",
-                "mask_loss",
-                "rec_loss"
+                "train_loss",
+                "train_ce_loss",
+                "train_mask_loss",
+                "train_rec_loss",
+                "val_loss",
+                "val_miou",
+                "val_mdice"
             ])
 
-    def log_epoch(self, epoch, loss, ce, mask, rec):
+        self.best_model_path = None
+        self.best_metric = float('-inf')
+
+    def log_epoch(self, epoch, train_loss, train_ce, train_mask, train_rec,
+                  val_loss=None, val_miou=None, val_mdice=None):
         with open(self.metrics_file, "a", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([epoch, loss, ce, mask, rec])
-    
-    def save_checkpoint(self, model, epoch):
+            writer.writerow([
+                epoch,
+                train_loss,
+                train_ce,
+                train_mask,
+                train_rec,
+                val_loss if val_loss is not None else "",
+                val_miou if val_miou is not None else "",
+                val_mdice if val_mdice is not None else ""
+            ])
+
+    def save_checkpoint(self, model, epoch, is_best=False):
+        """Save model checkpoint."""
         path = os.path.join(self.exp_dir, f"model_epoch_{epoch}.pth")
         torch.save(model.state_dict(), path)
-    
+
+        if is_best:
+            best_path = os.path.join(self.exp_dir, "best_model.pth")
+            torch.save(model.state_dict(), best_path)
+            self.best_model_path = best_path
+
+    def save_metrics_json(self, metrics_dict, filename="final_metrics.json"):
+        """Save metrics as JSON."""
+        path = os.path.join(self.exp_dir, filename)
+        with open(path, "w") as f:
+            json.dump(metrics_dict, f, indent=2)
 
     def log_config(self, config):
         with open(os.path.join(self.exp_dir, "config.yaml"), "w") as f:

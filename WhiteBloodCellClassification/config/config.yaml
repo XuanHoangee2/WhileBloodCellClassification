@@ -23,3 +23,20 @@ class_weights:
   cytoplasm: 2.5
   nucleus: 2.0
 temperature: 0.6
+
+# Learning Rate Scheduler Configuration
+scheduler:
+  type: "cosine"  # Options: "cosine", "plateau", null
+  T_max: 30       # For cosine annealing
+  eta_min: 0.000001
+  warmup_epochs: 5
+
+# Early Stopping Configuration
+early_stopping:
+  patience: 10
+  min_delta: 0.001
+
+# Augmentation Configuration
+augmentation:
+  use_advanced: true
+  enabled: true
