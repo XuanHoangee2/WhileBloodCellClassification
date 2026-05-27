@@ -4,6 +4,10 @@ from config.config_loader import load_config
 config = load_config()
 learning_rate = config["Domain_Adaptation_training"]["LEARNING_RATE"]
 weight_decays = config["Domain_Adaptation_training"]["WEIGHT_DECAY"]
+task_config = load_config(path = "config_task.yaml")
+cls_learning_rate = task_config["Task_training"]["LEARNING_RATE"]
+cls_weight_decays = task_config["Task_training"]["WEIGHT_DECAY"]
+encoder_lr = task_config["Encoder_lr"]["weight"]
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
@@ -38,6 +42,29 @@ def get_optimizer(model, reconstruction, learning_rate=learning_rate, weight_dec
         weight_decay=float(weight_decay),
         betas=(0.9, 0.999)
     )
+    return optimizer
+
+def get_classification_optimizer(model,learning_rate=cls_learning_rate,weight_decay=cls_weight_decays,encoder_multiplier=encoder_lr):
+
+    encoder_lr = learning_rate * encoder_multiplier
+
+    optimizer = torch.optim.AdamW(
+        [
+            {
+                "params": model.pixel_encoder.parameters(),
+                "lr": encoder_lr
+            },
+
+            {
+                "params": model.classifier.parameters(),
+                "lr": learning_rate
+            }
+        ],
+
+        weight_decay=float(weight_decay),
+        betas=(0.9, 0.999)
+    )
+
     return optimizer
 
 def get_scaler():

@@ -8,11 +8,11 @@ Domain_Adaptation_training:
   PIN_MEMORY: true
   NUM_WORKERS: 0
   LOAD_MODEL: false
-  WEIGHT_DECAY: 0.0001
+  WEIGHT_DECAY: 0.001
   SEED: 140
 dataset:
-  root_dir: "D:/work/WBC_Segmentation/WhileBloodCellClassification/data/RawData"
-  mask_dir: "Dataset 1"
+  root_dir: "D:/work/WBC_Segmentation/WhileBloodCellClassification/data/SourceData"
+  mask_dir: "Dataset"
 weight:
   weight_cross_entropy: 1
   weight_mask: 2
@@ -20,6 +20,10 @@ weight:
   weight_boundary: 2
 class_weights:
   background: 1.0
-  cytoplasm: 2.5
-  nucleus: 2.0
-temperature: 0.6
+  cytoplasm: 8.0
+  nucleus: 4.0
+temperature: 
+  weight: 0.5
+Training_Configuration:
+  RESUME_TRAINING: True
+  CHECKPOINT_PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/exp_20260526_211124/model_epoch_20.pth"

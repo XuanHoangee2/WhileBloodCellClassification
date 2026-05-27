@@ -1,10 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from config.config_loader import load_config
 
-config = load_config()
-temperature = config["temperature"]
+
 class SegmentationHead(nn.Module):
     def __init__(
         self,
@@ -44,7 +42,7 @@ class SegmentationHead(nn.Module):
         candidate_masks = candidate_masks / (Cp ** 0.5)
         class_logits = self.class_mlp(queries)  # B x Nq x K
 
-        temperature = temperature  
+        temperature = 0.5  
         class_probs = torch.softmax(class_logits / temperature, dim=-1)
 
         final_masks = torch.einsum(

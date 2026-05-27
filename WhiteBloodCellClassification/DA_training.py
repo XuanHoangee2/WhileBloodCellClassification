@@ -9,6 +9,7 @@ from utils import *
 from logger import ExperimentLogger
 import numpy as np
 import torch.nn as nn
+import os
 
 
 def training_fn(loader, model, optimizer, CrossEntropyLoss,DICELoss,BCELoss, ReconstructionLoss, scaler):
@@ -37,7 +38,10 @@ def training_fn(loader, model, optimizer, CrossEntropyLoss,DICELoss,BCELoss, Rec
                 target_binary = (masks == k).float()
                 dice = DICELoss(pred_binary, target_binary.long().unsqueeze(1))
                 bce = BCELoss(pred_binary, target_binary.unsqueeze(1))
-                mask_loss += bce + dice
+                if k == 1: 
+                    mask_loss += bce + 3* dice
+                else: 
+                    mask_loss += bce + dice
             mask_loss = mask_loss / K
             #####
             # boundary_loss = BoundaryLoss(predictions, masks_long)
@@ -92,49 +96,102 @@ pin_memory = config["Domain_Adaptation_training"].get("PIN_MEMORY", False)
 background_weight = config["class_weights"]["background"]
 cytoplasm_weight = config["class_weights"]["cytoplasm"]
 nucleus_weight = config["class_weights"]["nucleus"]
+RESUME_TRAINING = config["Training_Configuration"]["RESUME_TRAINING"]  
+CHECKPOINT_PATH = config["Training_Configuration"]["CHECKPOINT_PATH"]
+PRETRAINED_WEIGHTS_PATH = config["Training_Configuration"].get("PRETRAINED_WEIGHTS_PATH", None)
 
-np.random.seed(SEED)
+# np.random.seed(SEED)
 
 fulldataset = JSTCDataset(root_dir, mask_dir)
 num_samples = len(fulldataset)
-indices = np.arange(num_samples)
-np.random.shuffle(indices)
-split = int(0.8 * num_samples)
+# indices = np.arange(num_samples)
+# np.random.shuffle(indices)
+# split = int(0.8 * num_samples)
 
-train_indices = indices[:split]
-val_indices = indices[split:]
-train_dataset = JSTCDataset(root_dir, mask_dir, indices=train_indices)
-val_dataset   = JSTCDataset(root_dir, mask_dir, indices=val_indices)
-train_loader = DataLoader(
-    train_dataset,
-    batch_size=batch_size,
-    shuffle=True,
-    num_workers=num_workers,
-    pin_memory=pin_memory
-)
+# train_indices = indices[:split]
+# val_indices = indices[split:]
+# train_dataset = JSTCDataset(root_dir, mask_dir, indices=train_indices)
+# val_dataset   = JSTCDataset(root_dir, mask_dir, indices=val_indices)
+# train_loader = DataLoader(
+#     train_dataset,
+#     batch_size=batch_size,
+#     shuffle=True,
+#     num_workers=num_workers,
+#     pin_memory=pin_memory
+# )
 
-val_loader = DataLoader(
-    val_dataset,
-    batch_size=batch_size,
-    shuffle=False,
-    num_workers=num_workers,
-    pin_memory=pin_memory
-)
+# val_loader = DataLoader(
+#     val_dataset,
+#     batch_size=batch_size,
+#     shuffle=False,
+#     num_workers=num_workers,
+#     pin_memory=pin_memory
+# )
 # path_model_trained = "D:\work\WBC_Segmentation\WhileBloodCellClassification\logs\exp_20260402_004902\model_epoch_15.pth"
-model = DomainAdaptationModule().to(DEVICE)
+# model = DomainAdaptationModule().to(DEVICE)
 # model.load_state_dict(torch.load(path_model_trained, map_location="cpu"))
 # model.eval()
 CrossEntropyLoss = CLSLoss(class_weights=[background_weight, cytoplasm_weight, nucleus_weight])
 diceLoss = DiceLoss()
 bceLoss = nn.BCEWithLogitsLoss()
 reconstructionLoss = ReconstructionLoss()
-optimizer = get_optimizer(model,reconstructionLoss)
+
+path_model_trained = CHECKPOINT_PATH
+
+model = DomainAdaptationModule(pretrained= not RESUME_TRAINING and PRETRAINED_WEIGHTS_PATH is None).to(DEVICE)
+optimizer = get_optimizer(model, reconstructionLoss)
 scaler = get_scaler()
-for epoch in range(EPOCHS+1):
+start_epoch = 0
+
+if RESUME_TRAINING and os.path.exists(path_model_trained):
+    checkpoint = torch.load(path_model_trained, map_location="cpu")
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    if 'scaler_state_dict' in checkpoint:
+        scaler.load_state_dict(checkpoint['scaler_state_dict'])
+    start_epoch = checkpoint['epoch'] + 1
+    print(f"Resume training from epoch {start_epoch}")
+elif PRETRAINED_WEIGHTS_PATH and os.path.exists(PRETRAINED_WEIGHTS_PATH):
+    # Load pretrained weights from .pth file (weights only, not full checkpoint)
+    state_dict = torch.load(PRETRAINED_WEIGHTS_PATH, map_location="cpu")
+    # Handle both cases: if the file contains only state_dict or a dict with 'model_state_dict'
+    if isinstance(state_dict, dict) and 'model_state_dict' in state_dict:
+        state_dict = state_dict['model_state_dict']
+    model.load_state_dict(state_dict, strict=False)
+    print(f"Loaded pretrained weights from {PRETRAINED_WEIGHTS_PATH}")
+else:
+    print("No checkpoint found, starting training from scratch.")
+
+for epoch in range(start_epoch, EPOCHS+1):
     print(f"\nEpoch [{epoch+1}/{EPOCHS}]")
+    epoch_seed = SEED + epoch 
+    indices = np.arange(num_samples)
+    np.random.seed(epoch_seed)
+    np.random.shuffle(indices)
+    split = int(0.8 * num_samples)
+
+    train_indices = indices[:split]
+    val_indices = indices[split:]
+    train_dataset = JSTCDataset(root_dir, mask_dir, indices=train_indices)
+    val_dataset   = JSTCDataset(root_dir, mask_dir, indices=val_indices)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory
+    )
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory
+    )
     loss, ce, mask, rec = training_fn(loader=train_loader, model=model, optimizer=optimizer, CrossEntropyLoss=CrossEntropyLoss, DICELoss=diceLoss, BCELoss=bceLoss, ReconstructionLoss=reconstructionLoss, scaler=scaler)
     print(f"Epoch {epoch+1}: Loss={loss:.4f}, CE={ce:.4f}, Mask={mask:.4f}, Rec={rec:.4f}")
 
     logger.log_epoch(epoch, loss, ce, mask, rec)
     if (epoch) % 5 == 0:
-        logger.save_checkpoint(model, epoch)
+        logger.save_checkpoint(model, epoch, optimizer, scaler)
