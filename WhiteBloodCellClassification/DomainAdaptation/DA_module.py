@@ -1,15 +1,17 @@
 import torch
 import torch.nn as nn
-from models.PixelEncoder import PixelEncoder
-from models.spatial_cooccurrence import SCFEModule
-from models.PixelDecoder import PixelDecoder
-from models.segmentationHead import SegmentationHead
-from models.TransformerDecoder import TransformerDecoder
+from ..models.PixelEncoder import PixelEncoder
+from ..models.spatial_cooccurrence import SCFEModule
+from ..models.PixelDecoder import PixelDecoder
+from ..models.segmentationHead import SegmentationHead
+from ..models.TransformerDecoder import TransformerDecoder
+from ..models.classifier import NuclearCytoplasmicClassifier
+
 
 class DomainAdaptationModule(nn.Module):
-    def __init__(self):
+    def __init__(self,pretrained=True):
         super().__init__()
-        self.pixel_encoder = PixelEncoder()
+        self.pixel_encoder = PixelEncoder(pretrained=pretrained)
         self.pixel_decoder = PixelDecoder()
         self.scfe = SCFEModule(2048, 512, 256)
         self.segmentation_head = SegmentationHead()
@@ -23,3 +25,5 @@ class DomainAdaptationModule(nn.Module):
         masks = self.segmentation_head(Qi, pixel_feature)
 
         return masks, feature, Qi
+
+

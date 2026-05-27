@@ -1,0 +1,21 @@
+Task_training:
+  LEARNING_RATE: 0.00005 
+  BATCH_SIZE: 32
+  DEVICE: "cuda"
+  NUM_EPOCHS: 30
+  IMAGE_HEIGHT: 256
+  IMAGE_WIDTH: 256
+  PIN_MEMORY: true
+  NUM_WORKERS: 0
+  LOAD_MODEL: false
+  WEIGHT_DECAY: 0.001
+  SEED: 2004
+dataset:
+  root_dir: "D:/work/WBC_Segmentation/WhileBloodCellClassification/data/ClassificationData"
+Encoder_lr:
+  weight: 0.5
+temperature: 
+  weight: 0.5
+Training_Configuration:
+  RESUME_TRAINING: False
+  CHECKPOINT_PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/exp_20260407_172349/model_epoch_25.pth"

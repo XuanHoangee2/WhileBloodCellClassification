@@ -204,7 +204,7 @@ class ReconstructionLoss(nn.Module):
         #     cos_sim_norm = F.cosine_similarity(g_i_norm, g_hat_norm, dim=1).mean()
         #     print(f"Cosine similarity (norm): {cos_sim_norm:.4f}")
         
-        return loss_cos * 0.5 
+        return loss_cos  
 
 # class ReconstructionLoss(nn.Module):
 #     def __init__(self, encoder_dim=1024, query_dim=256, num_queries=32):
@@ -228,3 +228,10 @@ class ReconstructionLoss(nn.Module):
 #         g_hat = F.normalize(g_hat, p=2, dim=1)
 
 #         return F.mse_loss(g_hat, g_i)
+class ClassificationLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.loss_fn = nn.CrossEntropyLoss()
+
+    def forward(self, y_hat, y):
+        return self.loss_fn(y_hat, y)
