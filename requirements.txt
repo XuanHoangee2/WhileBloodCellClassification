@@ -5,3 +5,4 @@ matplotlib
 opencv-python==4.11.0.86
 tqdm
 pyyaml
+sklearn
