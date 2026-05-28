@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
-from ..models.PixelEncoder import PixelEncoder
-from ..models.spatial_cooccurrence import SCFEModule
-from ..models.PixelDecoder import PixelDecoder
-from ..models.segmentationHead import SegmentationHead
-from ..models.TransformerDecoder import TransformerDecoder
-from ..models.classifier import NuclearCytoplasmicClassifier
+from models.PixelEncoder import PixelEncoder
+from models.spatial_cooccurrence import SCFEModule
+from models.PixelDecoder import PixelDecoder
+from models.segmentationHead import SegmentationHead
+from models.TransformerDecoder import TransformerDecoder
+from models.classifier import NuclearCytoplasmicClassifier
 
 
 class DomainAdaptationModule(nn.Module):
