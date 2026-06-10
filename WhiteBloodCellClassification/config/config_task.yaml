@@ -19,5 +19,8 @@ Encoder_lr:
 temperature: 
   weight: 0.5
 Training_Configuration:
-  RESUME_TRAINING: False
+  RESUME_TRAINING: true
   CHECKPOINT_PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/exp_20260407_172349/model_epoch_25.pth"
+
+PRETRAIN_PARAMETERS:
+  PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/exp_20260403_233703/model_epoch_20.pth"

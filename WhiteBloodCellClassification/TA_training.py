@@ -148,7 +148,7 @@ def validation_classification_fn(loader, model, ClassificationLoss, use_cuda=Tru
     return total_loss / num_batches, accuracy
 
 def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True, 
-               resume_training=False, pretrained_path=None):
+               resume_training=False, pretrained_path=None, domain_adaptation_path = None):
     print(f"\n{'='*50}")
     print(f"Training Fold {fold + 1}/{config['Task_training']['NUM_FOLDS']}")
     print(f"{'='*50}")
@@ -193,6 +193,17 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
         print(f"📥 Using pretrained weights, starting from scratch")
     else:
         print(f"✨ Starting training from scratch")
+        if domain_adaptation_path is None:
+            print(f"✨ No domain adaptation weights provided")
+        else:
+            checkpoint = torch.load(domain_adaptation_path, map_location="cpu")
+            state_dict = checkpoint.get('model_state_dict', checkpoint)
+            missing, unexpected = model.load_state_dict(state_dict, strict=False)
+            print(f"✅ Loaded domain adaptation weights from {domain_adaptation_path}")
+            if missing:
+                print(f"   Missing keys (expected for classifier head): {len(missing)}")
+            if unexpected:
+                print(f"   Unexpected keys: {len(unexpected)}")
     
     patience = config["Task_training"].get("PATIENCE", 5)
     patience_counter = 0
@@ -235,7 +246,7 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
     
     return best_val_accuracy, best_val_loss
 
-def cross_validation_training(config, dataset, use_cuda=True, pretrained_path=None, resume_training=False):
+def cross_validation_training(config, dataset, use_cuda=True, pretrained_path=None, resume_training=False,domain_adaptation_path = None):
     SEED = config["Task_training"]["SEED"]
     NUM_FOLDS = config["Task_training"].get("NUM_FOLDS", 5)
     batch_size = config["Task_training"]["BATCH_SIZE"]
@@ -282,7 +293,7 @@ def cross_validation_training(config, dataset, use_cuda=True, pretrained_path=No
         
         best_accuracy, best_loss = train_fold(
             fold, train_loader, val_loader, config, cv_logger, use_cuda,
-            resume_training=resume_training, pretrained_path=pretrained_path
+            resume_training=resume_training, pretrained_path=pretrained_path, domain_adaptation_path=domain_adaptation_path
         )
         
         fold_results.append({
@@ -303,7 +314,7 @@ def cross_validation_training(config, dataset, use_cuda=True, pretrained_path=No
     
     return fold_results
 
-def train_final_model(config, dataset, use_cuda=True, pretrained_path=None, resume_training=False):
+def train_final_model(config, dataset, use_cuda=True, pretrained_path=None, resume_training=False,domain_adaptation_path = None):
     """Train final model on full dataset"""
     print("\n" + "="*60)
     print("TRAINING FINAL MODEL")
@@ -358,7 +369,7 @@ def train_final_model(config, dataset, use_cuda=True, pretrained_path=None, resu
         model, _ = load_pretrained_model(model, pretrained_path, DEVICE)
         print(f"📥 Using pretrained weights for final model")
     else:
-        print(f"✨ Starting final model training from scratch")
+        print("Training from scratch")
     
     for epoch in range(start_epoch, EPOCHS):
         print(f"\nFinal Model - Epoch [{epoch+1}/{EPOCHS}]")
@@ -409,7 +420,8 @@ if __name__ == "__main__":
     
     # Pretrained model configuration
     PRETRAINED_WEIGHTS_PATH = config["Training_Configuration"]["CHECKPOINT_PATH"] # Path to pretrained weights
-    RESUME_TRAINING = config["Training_Configuration"]["RESUME_TRAINING"]  # Set to True to resume training from checkpoint
+    RESUME_TRAINING = config["Training_Configuration"]["RESUME_TRAINING"]
+    DOMAIN_ADAPTATION = config["PRETRAIN_PARAMETERS"]["PATH"]  # Set to True to resume training from checkpoint
     # ======================================
     
     # Check CUDA availability
@@ -478,7 +490,8 @@ if __name__ == "__main__":
     cv_results = cross_validation_training(
         config, train_dataset, use_cuda=USE_CUDA,
         pretrained_path=PRETRAINED_WEIGHTS_PATH if not RESUME_TRAINING else None,
-        resume_training=RESUME_TRAINING
+        resume_training=RESUME_TRAINING,
+        domain_adaptation_path=DOMAIN_ADAPTATION
     )
     
     # Print cross-validation summary
@@ -494,7 +507,7 @@ if __name__ == "__main__":
     print(f"\n📊 Average across all folds: Accuracy = {avg_accuracy:.4f}, Loss = {avg_loss:.4f}")
     
     # Train final model
-    TRAIN_FINAL_ON_FULL = False  # Set to True to train final model on full dataset
+    TRAIN_FINAL_ON_FULL = True  # Set to True to train final model on full dataset
     
     if TRAIN_FINAL_ON_FULL and USE_SUBSET:
         print(f"\n⚠️  Training final model on FULL dataset ({len(full_dataset)} images)")
@@ -507,7 +520,8 @@ if __name__ == "__main__":
         config, final_train_dataset,
         use_cuda=USE_CUDA,
         pretrained_path=PRETRAINED_WEIGHTS_PATH,
-        resume_training=RESUME_TRAINING
+        resume_training=RESUME_TRAINING,
+        domain_adaptation_path=DOMAIN_ADAPTATION
     )
     
     print("\n" + "="*60)
