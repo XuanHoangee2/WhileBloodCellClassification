@@ -20,7 +20,7 @@ temperature:
   weight: 0.5
 Training_Configuration:
   RESUME_TRAINING: false
-  CHECKPOINT_PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/exp_20260407_172349/model_epoch_25.pth"
+  CHECKPOINT_PATH: None
 
 PRETRAIN_PARAMETERS:
   PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/exp_20260403_233703/model_epoch_20.pth"
