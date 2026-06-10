@@ -507,7 +507,7 @@ if __name__ == "__main__":
     print(f"\n📊 Average across all folds: Accuracy = {avg_accuracy:.4f}, Loss = {avg_loss:.4f}")
     
     # Train final model
-    TRAIN_FINAL_ON_FULL = True  # Set to True to train final model on full dataset
+    TRAIN_FINAL_ON_FULL = False  # Set to True to train final model on full dataset
     
     if TRAIN_FINAL_ON_FULL and USE_SUBSET:
         print(f"\n⚠️  Training final model on FULL dataset ({len(full_dataset)} images)")
