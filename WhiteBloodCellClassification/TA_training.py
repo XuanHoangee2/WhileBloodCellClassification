@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, SubsetRandomSampler, Subset
 from sklearn.model_selection import KFold
 import random
 from collections import defaultdict
+import shutil
 
 def get_stratified_subset(dataset, percentage=0.05, seed=42):
     """
@@ -153,6 +154,8 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
     print(f"Training Fold {fold + 1}/{config['Task_training']['NUM_FOLDS']}")
     print(f"{'='*50}")
     
+    drive_fold_path = f'/PBC_dataset_split/MyDrive/Colab Notebooks/fold_{fold+1}'
+    os.makedirs(drive_fold_path, exist_ok=True)
     model = TaskModule(num_classes=8).to(DEVICE)
     
     freeze_layers = ['pixel_decoder', 'transformer_decoder']
@@ -243,6 +246,20 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
             if patience_counter >= patience:
                 print(f"Early stopping at epoch {epoch+1}")
                 break
+        if (epoch + 1) % 5 == 0:
+            checkpoint = {
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'train_loss': train_loss,
+                'val_loss': val_loss,
+                'val_accuracy': val_accuracy,
+            }
+            if scaler is not None:
+                checkpoint['scaler_state_dict'] = scaler.state_dict()
+            
+            torch.save(checkpoint, f'{drive_fold_path}/checkpoint_epoch_{epoch+1}.pth')
+            print(f"💾 Checkpoint for fold {fold+1} epoch {epoch+1} saved to Drive")
     
     return best_val_accuracy, best_val_loss
 
@@ -319,7 +336,11 @@ def train_final_model(config, dataset, use_cuda=True, pretrained_path=None, resu
     print("\n" + "="*60)
     print("TRAINING FINAL MODEL")
     print("="*60)
-    
+
+    drive_models_path = '/PBC_dataset_split/MyDrive/Colab Notebooks'
+    os.makedirs(drive_models_path, exist_ok=True)
+    print(f"📁 Models will be saved to: {drive_models_path}")
+
     train_loader = DataLoader(
         dataset, 
         batch_size=config["Task_training"]["BATCH_SIZE"], 
@@ -389,10 +410,29 @@ def train_final_model(config, dataset, use_cuda=True, pretrained_path=None, resu
         if loss < best_loss:
             best_loss = loss
             final_logger.save_checkpoint(model, epoch, optimizer, scaler)
-        
-        if (epoch) % 5 == 0:
+            # Lưu bản copy best model lên Drive
+            best_checkpoint_path = f'{drive_models_path}/best_model_epoch{epoch+1}_loss{loss:.4f}.pth'
+            shutil.copy2(final_logger.checkpoint_path, best_checkpoint_path)
+            print(f"💾 Best model saved to Drive: {best_checkpoint_path}")
+        if (epoch + 1) % 5 == 0:
+            drive_checkpoint_path = f'{drive_models_path}/checkpoint_epoch_{epoch+1}.pth'
+            checkpoint = {
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+                'best_loss': best_loss,
+            }
+            if scaler is not None:
+                checkpoint['scaler_state_dict'] = scaler.state_dict()
+            
+            torch.save(checkpoint, drive_checkpoint_path)
+            print(f"💾 Checkpoint saved to Drive: {drive_checkpoint_path}")
             final_logger.save_checkpoint(model, epoch, optimizer, scaler)
     
+    final_model_path = f'{drive_models_path}/final_model_epoch{EPOCHS}.pth'
+    torch.save(model.state_dict(), final_model_path)
+    print(f"💾 Final model saved to Drive: {final_model_path}")
     return model
 
 # Helper function to check CUDA availability
