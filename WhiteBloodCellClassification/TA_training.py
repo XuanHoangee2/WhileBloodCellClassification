@@ -246,7 +246,7 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
             if patience_counter >= patience:
                 print(f"Early stopping at epoch {epoch+1}")
                 break
-        if (epoch + 1) % 5 == 0:
+        if (epoch + 1) % 2 == 0:
             checkpoint = {
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
@@ -414,7 +414,7 @@ def train_final_model(config, dataset, use_cuda=True, pretrained_path=None, resu
             best_checkpoint_path = f'{drive_models_path}/best_model_epoch{epoch+1}_loss{loss:.4f}.pth'
             shutil.copy2(final_logger.checkpoint_path, best_checkpoint_path)
             print(f"💾 Best model saved to Drive: {best_checkpoint_path}")
-        if (epoch + 1) % 5 == 0:
+        if (epoch + 1) % 2 == 0:
             drive_checkpoint_path = f'{drive_models_path}/checkpoint_epoch_{epoch+1}.pth'
             checkpoint = {
                 'epoch': epoch,
