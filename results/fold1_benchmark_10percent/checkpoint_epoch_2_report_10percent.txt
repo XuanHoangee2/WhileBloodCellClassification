@@ -1,0 +1,30 @@
+Checkpoint: D:\work\WBC_Segmentation\WhileBloodCellClassification\logs\fold_1\checkpoint_epoch_2.pth
+Test subset size: 201/2048 (10.0%)
+Overall Accuracy: 0.9851
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    basophil     1.0000    0.9286    0.9630        14
+  eosinophil     1.0000    1.0000    1.0000        37
+erythroblast     1.0000    1.0000    1.0000        18
+          ig     0.9697    0.9412    0.9552        34
+  lymphocyte     1.0000    1.0000    1.0000        14
+    monocyte     1.0000    1.0000    1.0000        17
+  neutrophil     0.9512    1.0000    0.9750        39
+    platelet     1.0000    1.0000    1.0000        28
+
+    accuracy                         0.9851       201
+   macro avg     0.9901    0.9837    0.9866       201
+weighted avg     0.9854    0.9851    0.9850       201
+
+
+Confusion Matrix:
+[[13,  0,  0,  1,  0,  0,  0,  0],
+ [ 0, 37,  0,  0,  0,  0,  0,  0],
+ [ 0,  0, 18,  0,  0,  0,  0,  0],
+ [ 0,  0,  0, 32,  0,  0,  2,  0],
+ [ 0,  0,  0,  0, 14,  0,  0,  0],
+ [ 0,  0,  0,  0,  0, 17,  0,  0],
+ [ 0,  0,  0,  0,  0,  0, 39,  0],
+ [ 0,  0,  0,  0,  0,  0,  0, 28]]

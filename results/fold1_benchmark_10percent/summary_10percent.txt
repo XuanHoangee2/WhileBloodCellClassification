@@ -1,0 +1,23 @@
+============================================================
+FOLD 1 BENCHMARK REPORT (ON 10.0% TEST DATA)
+============================================================
+Total test samples used: 201/2048 (10.0%)
+
+
+Model: checkpoint_epoch_6.pth
+  Accuracy: 0.9701 (on 201 samples)
+  Path: D:\work\WBC_Segmentation\WhileBloodCellClassification\logs\fold_1\checkpoint_epoch_6.pth
+
+Model: checkpoint_epoch_4.pth
+  Accuracy: 0.9502 (on 201 samples)
+  Path: D:\work\WBC_Segmentation\WhileBloodCellClassification\logs\fold_1\checkpoint_epoch_4.pth
+
+Model: checkpoint_epoch_2.pth
+  Accuracy: 0.9851 (on 201 samples)
+  Path: D:\work\WBC_Segmentation\WhileBloodCellClassification\logs\fold_1\checkpoint_epoch_2.pth
+
+Model: checkpoint_epoch_5.pth
+  Accuracy: 0.9751 (on 201 samples)
+  Path: D:\work\WBC_Segmentation\WhileBloodCellClassification\logs\fold_1\checkpoint_epoch_5.pth
+
+============================================================
