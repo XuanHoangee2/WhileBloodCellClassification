@@ -23,4 +23,4 @@ Training_Configuration:
   CHECKPOINT_PATH: "/PBC_dataset_split/MyDrive/Colab Notebooks/checkpoint_epoch_6.pth"
 
 PRETRAIN_PARAMETERS:
-  PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/fold_1/checkpoint_epoch_6.pth"
+  PATH: "/PBC_dataset_split/MyDrive/Colab Notebooks/checkpoint_epoch_6.pth"
