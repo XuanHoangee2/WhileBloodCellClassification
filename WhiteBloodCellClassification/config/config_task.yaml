@@ -20,7 +20,7 @@ temperature:
   weight: 0.5
 Training_Configuration:
   RESUME_TRAINING: True
-  CHECKPOINT_PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/fold_1/checkpoint_epoch_6.pth"
+  CHECKPOINT_PATH: "/PBC_dataset_split/MyDrive/Colab Notebooks/checkpoint_epoch_6.pth"
 
 PRETRAIN_PARAMETERS:
   PATH: "D:/work/WBC_Segmentation/WhileBloodCellClassification/logs/fold_1/checkpoint_epoch_6.pth"
