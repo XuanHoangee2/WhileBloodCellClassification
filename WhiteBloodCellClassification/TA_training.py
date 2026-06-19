@@ -494,7 +494,7 @@ if __name__ == "__main__":
     # Load full dataset
     print("Loading dataset...")
     full_dataset = datasets.ImageFolder(
-        root=r"D:\work\WBC_Segmentation\WhileBloodCellClassification\data/ClassificationData/PBC_dataset_split/Train", 
+        root=r"/PBC_dataset_split/MyDrive/Colab Notebooks/PBC_dataset_split/Train", 
         transform=transform
     )
     
