@@ -378,7 +378,7 @@ def train_final_model(config, dataset, use_cuda=True, pretrained_path=None, resu
     
     # Load pretrained weights or resume training
     if resume_training and pretrained_path and os.path.exists(pretrained_path):
-        checkpoint = torch.load(pretrained_path, map_location="cpu")
+        checkpoint = torch.load(pretrained_path, map_location="cuda")
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         if 'scaler_state_dict' in checkpoint and scaler is not None:
