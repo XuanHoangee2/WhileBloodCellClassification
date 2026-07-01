@@ -20,7 +20,7 @@ temperature:
   weight: 0.5
 Training_Configuration:
   RESUME_TRAINING: True
-  CHECKPOINT_PATH: "/PBC_dataset_split/MyDrive/Colab Notebooks/checkpoint_epoch_6.pth"
+  CHECKPOINT_PATH: "/PBC_dataset_split/MyDrive/Colab Notebooks/checkpoint_epoch_30_best.pth"
 
 PRETRAIN_PARAMETERS:
-  PATH: "/PBC_dataset_split/MyDrive/Colab Notebooks/checkpoint_epoch_6.pth"
+  PATH: "/PBC_dataset_split/MyDrive/Colab Notebooks/checkpoint_epoch_30_best.pth"
