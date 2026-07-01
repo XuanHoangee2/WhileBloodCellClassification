@@ -1,7 +1,7 @@
 Task_training:
   LEARNING_RATE: 0.00005 
   BATCH_SIZE: 8
-  DEVICE: "cpu"
+  DEVICE: "cuda"
   NUM_EPOCHS: 30
   IMAGE_HEIGHT: 256
   IMAGE_WIDTH: 256

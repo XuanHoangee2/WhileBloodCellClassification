@@ -541,7 +541,7 @@ if __name__ == "__main__":
     DOMAIN_ADAPTATION = config["PRETRAIN_PARAMETERS"]["PATH"]
 
     USE_CUDA = torch.cuda.is_available()
-    DEVICE = torch.device(config["Task_training"]["DEVICE"] if USE_CUDA else "cuda")
+    DEVICE = torch.device(config["Task_training"]["DEVICE"] if USE_CUDA else "cpu")
 
     print(f"\n{'='*60}")
     print(f"CONFIGURATION")
