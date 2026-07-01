@@ -159,8 +159,8 @@ def validation_classification_fn(loader, model, ClassificationLoss, use_cuda=Tru
 
             total_loss += loss.item()
             _, predicted = torch.max(predictions, 1)
-            all_predictions.extend(predicted.cuda().numpy())
-            all_labels.extend(labels.cuda().numpy())
+            all_predictions.extend(predicted.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
 
     accuracy = np.mean(np.array(all_predictions) == np.array(all_labels))
     return total_loss / num_batches, accuracy
