@@ -205,12 +205,8 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
     )
 
     scaler = None
-    if use_cuda:
+    if use_cuda and next(model.parameters()).is_cuda:
         scaler = get_scaler()
-
-    Loss = ClassificationLoss()
-
-    EPOCHS = config["Task_training"]["NUM_EPOCHS"]
     start_epoch = 0
     best_val_loss = float('inf')
     best_val_accuracy = 0.0
@@ -543,11 +539,17 @@ if __name__ == "__main__":
     USE_CUDA = torch.cuda.is_available()
     DEVICE = torch.device(config["Task_training"]["DEVICE"] if USE_CUDA else "cpu")
 
+    # QUAN TRỌNG: override USE_CUDA theo device thực tế.
+    # Config có thể set DEVICE="cpu" dù máy có GPU (ví dụ để debug).
+    # Nếu DEVICE là CPU thì KHÔNG dùng scaler/autocast dù cuda.is_available()=True,
+    # vì scaler.scale(loss) yêu cầu loss phải là CUDA tensor → AssertionError.
+    USE_CUDA = (DEVICE.type == "cuda")
+
     print(f"\n{'='*60}")
     print(f"CONFIGURATION")
     print(f"{'='*60}")
     print(f"Using device: {DEVICE}")
-    print(f"CUDA available: {USE_CUDA}")
+    print(f"CUDA available: {torch.cuda.is_available()}, actually using CUDA: {USE_CUDA}")
     print(f"Using subset: {USE_SUBSET}")
     if USE_SUBSET:
         print(f"Subset percentage: {SUBSET_PERCENTAGE*100}%")
