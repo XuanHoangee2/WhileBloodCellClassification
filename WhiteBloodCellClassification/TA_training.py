@@ -77,7 +77,7 @@ def _load_state_dict_safe(model, state_dict, label="checkpoint"):
     return missing, unexpected
 
 
-def load_pretrained_model(model, pretrained_path, device='cpu'):
+def load_pretrained_model(model, pretrained_path, device='cuda'):
     if not os.path.exists(pretrained_path):
         print(f"⚠️  Pretrained weights file not found: {pretrained_path}")
         return model, 0
@@ -159,8 +159,8 @@ def validation_classification_fn(loader, model, ClassificationLoss, use_cuda=Tru
 
             total_loss += loss.item()
             _, predicted = torch.max(predictions, 1)
-            all_predictions.extend(predicted.cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
+            all_predictions.extend(predicted.cuda().numpy())
+            all_labels.extend(labels.cuda().numpy())
 
     accuracy = np.mean(np.array(all_predictions) == np.array(all_labels))
     return total_loss / num_batches, accuracy
@@ -205,8 +205,12 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
     )
 
     scaler = None
-    if use_cuda and next(model.parameters()).is_cuda:
+    if use_cuda:
         scaler = get_scaler()
+
+    Loss = ClassificationLoss()
+
+    EPOCHS = config["Task_training"]["NUM_EPOCHS"]
     start_epoch = 0
     best_val_loss = float('inf')
     best_val_accuracy = 0.0
@@ -228,7 +232,7 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
     # (D) Không có pretrained_path → dùng domain_adaptation_path nếu có.
     # ------------------------------------------------------------------ #
     if resume_training and pretrained_path and os.path.exists(pretrained_path):
-        checkpoint = torch.load(pretrained_path, map_location="cpu")
+        checkpoint = torch.load(pretrained_path, map_location="cuda")
         state_dict = checkpoint.get('model_state_dict', checkpoint)
 
         missing, _ = _load_state_dict_safe(model, state_dict, label="resume")
@@ -256,7 +260,7 @@ def train_fold(fold, train_loader, val_loader, config, logger, use_cuda=True,
     else:
         print(f"✨ Starting from scratch")
         if domain_adaptation_path and os.path.exists(domain_adaptation_path):
-            checkpoint = torch.load(domain_adaptation_path, map_location="cpu")
+            checkpoint = torch.load(domain_adaptation_path, map_location="cuda")
             state_dict = checkpoint.get('model_state_dict', checkpoint)
             _load_state_dict_safe(model, state_dict, label="domain_adaptation")
         else:
@@ -436,7 +440,7 @@ def train_final_model(config, dataset, use_cuda=True, pretrained_path=None,
     best_ckpt_local = None
 
     if resume_training and pretrained_path and os.path.exists(pretrained_path):
-        checkpoint = torch.load(pretrained_path, map_location="cpu")
+        checkpoint = torch.load(pretrained_path, map_location="cuda")
         state_dict = checkpoint.get('model_state_dict', checkpoint)
 
         missing, _ = _load_state_dict_safe(model, state_dict, label="resume_final")
@@ -459,7 +463,7 @@ def train_final_model(config, dataset, use_cuda=True, pretrained_path=None,
     else:
         print("Training from scratch")
         if domain_adaptation_path and os.path.exists(domain_adaptation_path):
-            checkpoint = torch.load(domain_adaptation_path, map_location="cpu")
+            checkpoint = torch.load(domain_adaptation_path, map_location="cuda")
             state_dict = checkpoint.get('model_state_dict', checkpoint)
             _load_state_dict_safe(model, state_dict, label="domain_adaptation_final")
 
@@ -537,19 +541,13 @@ if __name__ == "__main__":
     DOMAIN_ADAPTATION = config["PRETRAIN_PARAMETERS"]["PATH"]
 
     USE_CUDA = torch.cuda.is_available()
-    DEVICE = torch.device(config["Task_training"]["DEVICE"] if USE_CUDA else "cpu")
-
-    # QUAN TRỌNG: override USE_CUDA theo device thực tế.
-    # Config có thể set DEVICE="cpu" dù máy có GPU (ví dụ để debug).
-    # Nếu DEVICE là CPU thì KHÔNG dùng scaler/autocast dù cuda.is_available()=True,
-    # vì scaler.scale(loss) yêu cầu loss phải là CUDA tensor → AssertionError.
-    USE_CUDA = (DEVICE.type == "cuda")
+    DEVICE = torch.device(config["Task_training"]["DEVICE"] if USE_CUDA else "cuda")
 
     print(f"\n{'='*60}")
     print(f"CONFIGURATION")
     print(f"{'='*60}")
     print(f"Using device: {DEVICE}")
-    print(f"CUDA available: {torch.cuda.is_available()}, actually using CUDA: {USE_CUDA}")
+    print(f"CUDA available: {USE_CUDA}")
     print(f"Using subset: {USE_SUBSET}")
     if USE_SUBSET:
         print(f"Subset percentage: {SUBSET_PERCENTAGE*100}%")
@@ -561,7 +559,7 @@ if __name__ == "__main__":
     print(f"{'='*60}\n")
 
     if not USE_CUDA:
-        print("⚠️  Warning: CUDA not available. Training on CPU may be slow.")
+        print("⚠️  Warning: CUDA not available. Training on cuda may be slow.")
 
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
@@ -589,7 +587,7 @@ if __name__ == "__main__":
         print(f"\n✅ Using full dataset: {len(train_dataset)} images")
 
     if not USE_CUDA:
-        print("\n⚙️  Adjusting settings for CPU training...")
+        print("\n⚙️  Adjusting settings for cuda training...")
         if config["Task_training"]["BATCH_SIZE"] > 16:
             config["Task_training"]["BATCH_SIZE"] = 16
             print(f"  - Batch size reduced to: {config['Task_training']['BATCH_SIZE']}")
@@ -641,8 +639,6 @@ if __name__ == "__main__":
     print("\n" + "="*60)
     print("✅ TRAINING COMPLETED SUCCESSFULLY!")
     print("="*60)
-
-
 
 # from tqdm import tqdm
 # from DomainAdaptation.TA_module import TaskModule
@@ -696,7 +692,7 @@ if __name__ == "__main__":
     
 #     return subset
 
-# def load_pretrained_model(model, pretrained_path, device='cpu'):
+# def load_pretrained_model(model, pretrained_path, device='cuda'):
 #     """
 #     Load pretrained weights from checkpoint file
 #     """
@@ -788,8 +784,8 @@ if __name__ == "__main__":
             
 #             total_loss += loss.item()
 #             _, predicted = torch.max(predictions, 1)
-#             all_predictions.extend(predicted.cpu().numpy())
-#             all_labels.extend(labels.cpu().numpy())
+#             all_predictions.extend(predicted.cuda().numpy())
+#             all_labels.extend(labels.cuda().numpy())
     
 #     accuracy = np.mean(np.array(all_predictions) == np.array(all_labels))
 #     return total_loss / num_batches, accuracy
@@ -827,7 +823,7 @@ if __name__ == "__main__":
     
 #     # Load pretrained weights or resume training
 #     if resume_training and pretrained_path:
-#         checkpoint = torch.load(pretrained_path, map_location="cpu")
+#         checkpoint = torch.load(pretrained_path, map_location="cuda")
 #         model.load_state_dict(checkpoint['model_state_dict'])
 #         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 #         if 'scaler_state_dict' in checkpoint and scaler is not None:
@@ -845,7 +841,7 @@ if __name__ == "__main__":
 #         if domain_adaptation_path is None:
 #             print(f"✨ No domain adaptation weights provided")
 #         else:
-#             checkpoint = torch.load(domain_adaptation_path, map_location="cpu")
+#             checkpoint = torch.load(domain_adaptation_path, map_location="cuda")
 #             state_dict = checkpoint.get('model_state_dict', checkpoint)
 #             missing, unexpected = model.load_state_dict(state_dict, strict=False)
 #             print(f"✅ Loaded domain adaptation weights from {domain_adaptation_path}")
@@ -1112,7 +1108,7 @@ if __name__ == "__main__":
     
 #     # Check CUDA availability
 #     USE_CUDA = torch.cuda.is_available()
-#     DEVICE = torch.device(config["Task_training"]["DEVICE"] if USE_CUDA else "cpu")
+#     DEVICE = torch.device(config["Task_training"]["DEVICE"] if USE_CUDA else "cuda")
     
 #     print(f"\n{'='*60}")
 #     print(f"CONFIGURATION")
@@ -1130,7 +1126,7 @@ if __name__ == "__main__":
 #     print(f"{'='*60}\n")
     
 #     if not USE_CUDA:
-#         print("⚠️  Warning: CUDA is not available. Training will use CPU which may be slow.")
+#         print("⚠️  Warning: CUDA is not available. Training will use cuda which may be slow.")
     
 #     transform = transforms.Compose([
 #         transforms.Resize((256, 256)),
@@ -1156,9 +1152,9 @@ if __name__ == "__main__":
 #         train_dataset = full_dataset
 #         print(f"\n✅ Using full dataset: {len(train_dataset)} images")
     
-#     # Adjust settings for CPU if needed
+#     # Adjust settings for cuda if needed
 #     if not USE_CUDA:
-#         print("\n⚙️  Adjusting settings for CPU training...")
+#         print("\n⚙️  Adjusting settings for cuda training...")
 #         if config["Task_training"]["BATCH_SIZE"] > 16:
 #             config["Task_training"]["BATCH_SIZE"] = 16
 #             print(f"  - Batch size reduced to: {config['Task_training']['BATCH_SIZE']}")
