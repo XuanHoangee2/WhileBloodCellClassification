@@ -19,11 +19,11 @@ from DomainAdaptation.TA_module import TaskModule
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TEST_DIR = r"D:\work\WBC_Segmentation\WhileBloodCellClassification\data\ClassificationData\PBC_dataset_split\Test"
 LOG_DIR = r"D:\work\WBC_Segmentation\WhileBloodCellClassification\logs"
-RESULTS_DIR = r"D:\work\WBC_Segmentation\WhileBloodCellClassification\results\fold2"
+RESULTS_DIR = r"D:\work\WBC_Segmentation\WhileBloodCellClassification\results\fold1"
 BATCH_SIZE = 16
 NUM_WORKERS = 0
 NUM_VISUALIZE = 5
-TEST_PERCENTAGE = 1  # CHỈ LẤY 10% TẬP TEST
+TEST_PERCENTAGE = 0.5  # CHỈ LẤY 10% TẬP TEST
 SEED = 42  # Để kết quả reproducible
 
 os.makedirs(RESULTS_DIR, exist_ok=True)

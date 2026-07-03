@@ -22,6 +22,8 @@ class SCFEModule(nn.Module):
         y = y.flatten(2).permute(0, 2, 1)        # (B, 1, in_channels)
         query = self.linear(y)                   # chiếu xuống (B, 1, out_channels) — q_i
         return query
+
+        
 # class SCFEModule(nn.Module): 
 #     def __init__(self, in_channels, hidden_dim, out_channels): 
 #         super().__init__() 
