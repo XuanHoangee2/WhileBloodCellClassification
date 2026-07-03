@@ -534,7 +534,7 @@ if __name__ == "__main__":
         config["Task_training"]["WEIGHT_DECAY"] = 0.0001
 
     USE_SUBSET = True
-    SUBSET_PERCENTAGE = 0.3
+    SUBSET_PERCENTAGE = 1
 
     PRETRAINED_WEIGHTS_PATH = config["Training_Configuration"]["CHECKPOINT_PATH"]
     RESUME_TRAINING = config["Training_Configuration"]["RESUME_TRAINING"]
