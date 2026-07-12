@@ -1,0 +1,11 @@
+============================================================
+FOLD 1 BENCHMARK REPORT (ON 100% TEST DATA)
+============================================================
+Total test samples used: 2048/2048 (100%)
+
+
+Model: checkpoint_epoch_16.pth
+  Accuracy: 0.9707 (on 2048 samples)
+  Path: D:\work\WBC_Segmentation\WhileBloodCellClassification\logs\fold_1\checkpoint_epoch_16.pth
+
+============================================================

@@ -3,39 +3,27 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class NuclearCytoplasmicClassifier(nn.Module):
-    """
-    Nuclear-cytoplasmic knowledge-aware classifier with DOWNSAMPLING strategy.
-    
-    This version downsamples segmentation maps to match encoder feature resolution,
-    which is memory-efficient and fast while still preserving region-level information.
-    
-    Args:
-        in_channels (int): Encoder feature channels (default: 2048 for ResNet c4)
-        seg_classes (int): Number of segmentation classes (typically 2: nucleus, cytoplasm)
-        num_classes (int): Number of WBC types to classify
-        hidden_dim (int): MLP hidden dimension
-        dropout (float): Dropout rate for regularization
-        use_sigmoid (bool): Use sigmoid instead of softmax (recommended for overlapping regions)
-    """
-    def __init__(self, in_channels=2048, seg_classes=3, num_classes=6, 
-                 hidden_dim=256, dropout=0.5, use_sigmoid=True):
+    def __init__(self, in_channels=2048, num_classes=8, 
+                 hidden_dim=512, dropout=0.5):
         super().__init__()
-        self.seg_classes = seg_classes
-        self.use_sigmoid = use_sigmoid
         
-        # Conv 1x1 to transform encoder features
+        # Conv 1x1 để transform đặc trưng encoder
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, kernel_size=1, bias=False),
             nn.BatchNorm2d(in_channels),
             nn.ReLU(inplace=True)
         )
         
-        # MLP classifier
+        # MLP classifier - input là concatenation của 3 đặc trưng
+        # 3 * in_channels = 6144 chiều
         self.mlp = nn.Sequential(
-            nn.Linear(in_channels, hidden_dim),
+            nn.Linear(3 * in_channels, hidden_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim, num_classes)
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, num_classes)
         )
         
         self._init_weights()
@@ -50,26 +38,29 @@ class NuclearCytoplasmicClassifier(nn.Module):
                 nn.init.xavier_uniform_(m.weight)
                 nn.init.zeros_(m.bias)
 
-    def forward(self, f_j, z_hat, z_is_logits=True):
+    def forward(self, f_j, z_hat):
         """
         Args:
-            f_j (Tensor): Encoder features (B, C, H_f, W_f) - e.g., (4, 2048, 8, 8)
-            z_hat (Tensor): Segmentation map (B, K, H_z, W_z) - e.g., (4, 2, 224, 224)
-            z_is_logits (bool): If True, apply sigmoid/softmax to z_hat
-            
+            f_j (Tensor): Encoder features (B, C, H_f, W_f) 
+                         e.g., (batch, 2048, 8, 8)
+            z_hat (Tensor): Segmentation map (B, K, H_z, W_z)
+                           CHỈ LẤY 2 LỚP: nucleus và cytoplasm
+                           e.g., (batch, 2, 224, 224)
+                           - z_hat[:, 0, :, :] = nucleus probability
+                           - z_hat[:, 1, :, :] = cytoplasm probability
         Returns:
             logits (Tensor): Classification logits (B, num_classes)
         """
         B, C, H_f, W_f = f_j.shape
         _, K, H_z, W_z = z_hat.shape
         
-        assert K == self.seg_classes, \
-            f"Expected {self.seg_classes} seg classes, got {K}"
+        # Kiểm tra: CHỈ dùng 2 lớp (nucleus + cytoplasm)
+        assert K == 2, f"Expected 2 seg classes (nucleus, cytoplasm), got {K}"
         
-        # Step 1: Transform encoder features (keep original size)
+        # Step 1: Transform encoder features
         f_conv = self.conv(f_j)  # (B, C, H_f, W_f)
         
-        # Step 2: DOWNSAMPLE z_hat to match f_j resolution
+        # Step 2: Downsample segmentation map về resolution của f_j
         z_down = F.interpolate(
             z_hat,
             size=(H_f, W_f),
@@ -77,29 +68,25 @@ class NuclearCytoplasmicClassifier(nn.Module):
             align_corners=False
         )  # (B, K, H_f, W_f)
         
-        # Step 3: Convert segmentation logits to probabilities
-        if z_is_logits:
-            if self.use_sigmoid:
-                # Sigmoid: each class independent (allows nucleus & cytoplasm overlap)
-                z_prob = torch.sigmoid(z_down)  # (B, K, H_f, W_f)
-            else:
-                # Softmax: classes are mutually exclusive
-                z_prob = torch.softmax(z_down, dim=1)  # (B, K, H_f, W_f)
-        else:
-            z_prob = z_down
+        # Step 3: Convert to probabilities (sigmoid cho phép overlap)
+        z_prob = torch.sigmoid(z_down)  # (B, K, H_f, W_f)
         
-        # Step 4: Weighted pooling - combine features with segmentation weights
-        # (B, C, H_f, W_f) * (B, K, H_f, W_f) -> sum over spatial -> (B, K, C)
-        class_features = torch.einsum('bchw,bkhw->bkc', f_conv, z_prob)
+        # Step 4: Trích xuất đặc trưng riêng cho từng vùng
+        # (B, C, H_f, W_f) * (B, 1, H_f, W_f) -> (B, C, H_f, W_f)
+        f_nucleus = f_conv * z_prob[:, 0:1, :, :]   # Chỉ vùng nhân
+        f_cytoplasm = f_conv * z_prob[:, 1:2, :, :] # Chỉ vùng bào tương
+        f_cell = f_conv * (z_prob[:, 0:1, :, :] + z_prob[:, 1:2, :, :])  # Toàn bộ tế bào
         
-        # Step 5: Aggregate across classes
-        aggregated = class_features.sum(dim=1)  # (B, C)
+        # Step 5: Global Average Pooling cho từng vùng
+        f_nucleus_pool = f_nucleus.sum(dim=(2, 3)) / (z_prob[:, 0:1, :, :].sum(dim=(2, 3)) + 1e-6)
+        f_cytoplasm_pool = f_cytoplasm.sum(dim=(2, 3)) / (z_prob[:, 1:2, :, :].sum(dim=(2, 3)) + 1e-6)
+        f_cell_pool = f_cell.sum(dim=(2, 3)) / ((z_prob[:, 0:1, :, :] + z_prob[:, 1:2, :, :]).sum(dim=(2, 3)) + 1e-6)
         
-        # Step 6: Normalize by total weight to get weighted average
-        total_weight = z_prob.sum(dim=(1, 2, 3)).unsqueeze(1)  # (B, 1)
-        aggregated = aggregated / (total_weight + 1e-6)  # (B, C)
+        # Step 6: CONCATENATE 3 đặc trưng (như luận văn)
+        f_final = torch.cat([f_nucleus_pool, f_cytoplasm_pool, f_cell_pool], dim=1)
+        # (B, 3*C) = (B, 6144)
         
-        # Step 7: Classify
-        logits = self.mlp(aggregated)  # (B, num_classes)
+        # Step 7: MLP classifier
+        logits = self.mlp(f_final)  # (B, num_classes)
         
         return logits
